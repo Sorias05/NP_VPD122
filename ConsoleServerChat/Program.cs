@@ -10,10 +10,12 @@ namespace ConsoleServerChat
         static readonly Dictionary<int, TcpClient> list_clients = new Dictionary<int, TcpClient>();
         public static void Main(string[] args)
         {
+            // Створення змінних
             string fileName = "setting.txt";
             int count = 1;
             IPAddress ip;
             int port;
+            // Зчитування з файла налаштувань порт, ip
             using(FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
             {
                 using(StreamReader sr = new StreamReader(fs))
@@ -22,9 +24,11 @@ namespace ConsoleServerChat
                     port=int.Parse(sr.ReadLine());
                 }
             }
+            // Створення нового сервера і запуск
             TcpListener serverSocket = new TcpListener(ip, port);
             serverSocket.Start();
             Console.WriteLine("Запуск сервера {0}:{1}", ip, port);
+            // Відслідковування подій
             while (true)
             {
                 TcpClient client = serverSocket.AcceptTcpClient();
@@ -35,11 +39,14 @@ namespace ConsoleServerChat
                 count++;
             }
         }
+        // Обслуговування клієнта
         public static void handle_clients(object c)
         {
             int id = (int)c;
+            // Обрання клієнта за id зі списку
             TcpClient client;
             lock (_lock) { client = list_clients[id]; }
+            // Підключення й обробка клієнта
             while (true)
             {
                 NetworkStream stream = client.GetStream();
@@ -51,10 +58,12 @@ namespace ConsoleServerChat
                 broadcast(data);
                 Console.WriteLine(data);
             }
+            // Відключення клієнта
             lock(_lock) { list_clients.Remove(id); }
             client.Client.Shutdown(SocketShutdown.Both);
             client.Close();
         }
+        // Передача й запис даних
         public static void broadcast(string data)
         {
             byte[] buffer=Encoding.UTF8.GetBytes(data);

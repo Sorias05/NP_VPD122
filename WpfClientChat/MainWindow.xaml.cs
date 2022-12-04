@@ -24,6 +24,7 @@ namespace WpfClientChat
     /// </summary>
     public partial class MainWindow : Window
     {
+        // Створення змінних
         TcpClient client = new TcpClient();
         NetworkStream ns;
         Thread thread;
@@ -33,14 +34,18 @@ namespace WpfClientChat
         {
             InitializeComponent();
         }
-
+        
+        // Кнопка підключення до чату
         private void btnConnect_Click(object sender, RoutedEventArgs e)
         {
+            // Спроба підключення до чату
             try
             {
+                // Створення змінних
                 string fileName = "config.txt";
                 IPAddress ip;
                 int port;
+                // Зчитування з файла конфігурації порт, id
                 using(FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
                 {
                     using(StreamReader sr = new StreamReader(fs))
@@ -49,6 +54,7 @@ namespace WpfClientChat
                         port = int.Parse(sr.ReadLine());
                     }
                 }
+                // Підключення клієнта до чату
                 _message.UserName=txtUserName.Text;
                 _message.UserId=Guid.NewGuid().ToString();
                 client.Connect(ip,port);
@@ -57,17 +63,20 @@ namespace WpfClientChat
                 thread = new Thread(o=>RecieveData((TcpClient)o));
                 thread.Start(client);
 
+                // Створення повідомлення про підключення клієнта до чату
                 _message.MessageType = TypeMessage.Login;
                 _message.Text="Приєднався до чату";
                 byte[] bytes = _message.Serialize();
                 ns.Write(bytes);
             }
+            // Помилка
             catch (Exception ex)
             {
                 MessageBox.Show("Problem Connection Sever "+ ex.Message);
             }
         }
 
+        // Кнопка відправки повідомлення
         private void bntSend_Click(object sender, RoutedEventArgs e)
         {
             _message.MessageType = TypeMessage.Message;
@@ -75,7 +84,8 @@ namespace WpfClientChat
             var buffer = _message.Serialize();
             ns.Write(buffer, 0, buffer.Length);
         }
-
+        
+        // Відключення клієнта від чату
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             _message.MessageType = TypeMessage.Message;
@@ -88,16 +98,21 @@ namespace WpfClientChat
             client.Close();
            
         }
+
+        // Передача повідомлень
         private void RecieveData(TcpClient client)
         {
+            // Створення змінних
             NetworkStream ns = client.GetStream();
             var receivedBytes = new byte[4128];
             int byte_count;
             string data = "";
             while ((byte_count = ns.Read(receivedBytes, 0, receivedBytes.Length)) > 0)
             {
+                // Відправка повідомлення
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
+                    // Спроба отримання повідомлення
                     try
                     {
                         ChatMessage message = ChatMessage.Desserialize(receivedBytes);
@@ -124,11 +139,11 @@ namespace WpfClientChat
                                     }
                                     break;
                                 }
-
                         }
                         lbInfo.Items.MoveCurrentToLast();
                         lbInfo.ScrollIntoView(lbInfo.Items.CurrentItem);
                     }
+                    // Помилка
                     catch(Exception ex)
                     { Console.WriteLine(ex.ToString()); }
                 }));
